@@ -689,3 +689,59 @@ button, input, select, textarea {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Phones: let the navbar wrap and stack the side-by-side form fields. */
+@media (max-width: 600px) {
+  .nav-container {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .nav-actions {
+    gap: 0.5rem;
+  }
+
+  .nav-actions .btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .main-wrapper {
+    margin: 1.25rem auto;
+    padding: 0 1rem;
+  }
+
+  .hero-banner,
+  .card {
+    padding: 1.25rem;
+  }
+
+  .hero-title {
+    font-size: 1.6rem;
+  }
+
+  .form-row,
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+}

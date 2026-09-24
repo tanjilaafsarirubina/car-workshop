@@ -64,7 +64,7 @@
     </div>
 
     <div class="card" style="margin-bottom: 1.5rem; padding: 1.25rem;">
-      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1rem; align-items: center;">
+      <div class="filter-grid">
         <div>
           <label class="form-label" for="filterSearch">Search Client / License / Phone</label>
           <input type="text" id="filterSearch" class="form-input" placeholder="Type client name, phone, or license plate...">

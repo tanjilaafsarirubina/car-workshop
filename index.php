@@ -91,7 +91,7 @@
             <div class="field-error" id="err_address">Please enter your address.</div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="car_license">Car License / Reg No. <span class="req">*</span></label>
               <input type="text" id="car_license" name="car_license" class="form-input" placeholder="e.g. DHAKA-METRO-GA-11-2233" required>
