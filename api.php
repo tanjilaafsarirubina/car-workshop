@@ -27,9 +27,31 @@ switch ($action) {
         break;
 }
 
+function isValidDate($date) {
+    if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $m)) {
+        return false;
+    }
+    return checkdate((int)$m[2], (int)$m[3], (int)$m[1]);
+}
+
+// Booking is check-then-write: count the mechanic's slots, then insert. Two
+// requests racing for the last slot could both pass the count, so take a
+// write lock first and make them run one after the other. Call this before
+// the first read: SQLite gives up at once (instead of waiting) if a
+// connection that is still reading asks for the write lock. Any early exit
+// ends the request, which closes the connection and rolls the lock back.
+function beginBookingLock($pdo) {
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+        $pdo->exec('BEGIN IMMEDIATE');
+    } else {
+        $pdo->exec('START TRANSACTION');
+        $pdo->query('SELECT id FROM mechanics FOR UPDATE')->fetchAll();
+    }
+}
+
 function getSlots($pdo) {
     $date = isset($_GET['date']) ? trim($_GET['date']) : date('Y-m-d');
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+    if (!isValidDate($date)) {
         $date = date('Y-m-d');
     }
 
@@ -97,7 +119,7 @@ function bookAppointment($pdo) {
     if (empty($car_engine) || !preg_match('/^[a-zA-Z0-9\s\-]+$/', $car_engine)) {
         $errors[] = 'Car Engine Number is required (alphanumeric).';
     }
-    if (empty($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+    if (!isValidDate($date)) {
         $errors[] = 'A valid Appointment Date (YYYY-MM-DD) is required.';
     } else {
         $today = date('Y-m-d');
@@ -113,6 +135,8 @@ function bookAppointment($pdo) {
         echo json_encode(['success' => false, 'message' => implode(' ', $errors)]);
         exit;
     }
+
+    beginBookingLock($pdo);
 
     $mStmt = $pdo->prepare("SELECT * FROM mechanics WHERE id = ?");
     $mStmt->execute([$mechanic_id]);
@@ -161,9 +185,10 @@ function bookAppointment($pdo) {
         VALUES (?, ?, ?, ?, ?, ?, ?, 'approved')
     ");
     $success = $insStmt->execute([$client_name, $address, $phone, $car_license, $car_engine, $date, $mechanic_id]);
+    $insertId = $pdo->lastInsertId();
+    $pdo->exec($success ? 'COMMIT' : 'ROLLBACK');
 
     if ($success) {
-        $insertId = $pdo->lastInsertId();
         echo json_encode([
             'success' => true,
             'appointment_id' => $insertId,
@@ -230,10 +255,16 @@ function updateAppointment($pdo) {
     $new_date    = trim($_POST['appointment_date'] ?? '');
     $mechanic_id = (int)($_POST['mechanic_id'] ?? 0);
 
-    if ($id <= 0 || empty($new_date) || $mechanic_id <= 0) {
+    if ($id <= 0 || !isValidDate($new_date) || $mechanic_id <= 0) {
         echo json_encode(['success' => false, 'message' => 'Invalid parameters provided.']);
         exit;
     }
+    if ($new_date < date('Y-m-d')) {
+        echo json_encode(['success' => false, 'message' => 'Appointment date cannot be in the past.']);
+        exit;
+    }
+
+    beginBookingLock($pdo);
 
     $appStmt = $pdo->prepare("SELECT * FROM appointments WHERE id = ?");
     $appStmt->execute([$id]);
@@ -292,6 +323,7 @@ function updateAppointment($pdo) {
         WHERE id = ?
     ");
     $success = $upStmt->execute([$new_date, $mechanic_id, $id]);
+    $pdo->exec($success ? 'COMMIT' : 'ROLLBACK');
 
     if ($success) {
         echo json_encode([
