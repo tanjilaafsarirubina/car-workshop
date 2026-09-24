@@ -44,7 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
   editDateInput.addEventListener('change', (e) => {
     const targetDate = e.target.value;
     const currentMechanicId = editMechanicSelect.dataset.currentMechanicId;
-    loadMechanicsForEdit(targetDate, currentMechanicId);
+    const originalDate = editMechanicSelect.dataset.originalDate;
+    loadMechanicsForEdit(targetDate, currentMechanicId, originalDate);
   });
 
   function loadAppointments() {
@@ -136,7 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateStats(appointments) {
     statTotal.innerText = appointments.length;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    // toISOString() is UTC, which is still "yesterday" in Dhaka until 6 AM.
+    const now = new Date();
+    const todayStr = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0')
+    ].join('-');
     const todayCount = appointments.filter(a => a.appointment_date === todayStr).length;
     statToday.innerText = todayCount;
   }
@@ -150,12 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
     editClientDetails.innerText = `Phone: ${app.phone} | Car Reg: ${app.car_license} | Engine: ${app.car_engine}`;
     editDateInput.value = app.appointment_date;
     editMechanicSelect.dataset.currentMechanicId = app.mechanic_id;
+    editMechanicSelect.dataset.originalDate = app.appointment_date;
 
-    loadMechanicsForEdit(app.appointment_date, app.mechanic_id);
+    loadMechanicsForEdit(app.appointment_date, app.mechanic_id, app.appointment_date);
     editModal.classList.add('active');
   }
 
-  function loadMechanicsForEdit(targetDate, currentMechanicId) {
+  function loadMechanicsForEdit(targetDate, currentMechanicId, originalDate) {
     editMechanicSelect.innerHTML = `<option value="">Loading mechanics for ${targetDate}...</option>`;
 
     fetch(`api.php?action=get_slots&date=${encodeURIComponent(targetDate)}`)
@@ -167,8 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const opt = document.createElement('option');
             opt.value = m.id;
 
+            // This appointment already holds one of its mechanic's slots on
+            // its original date, so that slot is free for it to keep.
             let availSlots = m.available_slots;
-            if (m.id == currentMechanicId) {
+            if (m.id == currentMechanicId && targetDate === originalDate) {
               availSlots += 1;
             }
 

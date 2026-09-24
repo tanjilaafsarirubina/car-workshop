@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectedMechanicIdInput = document.getElementById('selected_mechanic_id');
   const summaryMechanicName = document.getElementById('summaryMechanicName');
   const appointmentForm = document.getElementById('appointmentForm');
+  const dateLabel = document.getElementById('dateLabel');
 
   const helpModal = document.getElementById('helpModal');
   const btnHelp = document.getElementById('btnHelp');
@@ -33,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
   btnCloseResult.addEventListener('click', () => resultModal.classList.remove('active'));
 
   function fetchMechanicsSlots(selectedDate) {
+    dateLabel.innerText = (!selectedDate || selectedDate === dateInput.min)
+      ? 'Today'
+      : new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
     mechanicsContainer.innerHTML = `
       <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
         <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
