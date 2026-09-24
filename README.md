@@ -143,8 +143,9 @@ This is a course project, not production software:
 ## Changes since the graded submission
 
 The version submitted for the course is commit
-[`a3b30ac`](https://github.com/tanjilaafsarirubina/car-workshop/tree/a3b30ac).
-Since then:
+[`52e9335`](https://github.com/tanjilaafsarirubina/car-workshop/tree/52e9335).
+It is unchanged apart from the database password, which has been redacted
+from the repository history. Since then:
 
 - Database credentials moved out of `config.php`, which used to hold the live
   MySQL password, into a git-ignored `config.local.php` or environment
