@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: PHP syntax
+        run: for f in *.php tests/*.php; do php -l "$f"; done
+      - name: JavaScript syntax
+        run: for f in *.js; do node --check "$f"; done
+
+  test:
+    name: API tests (${{ matrix.db }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [sqlite, mysql]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, pdo_mysql, curl
+          coverage: none
+
+      # The runner ships MySQL 8 with root/root. Load the same schema the live
+      # site uses and point config.php at it through environment variables.
+      - name: Start MySQL and load database.sql
+        if: matrix.db == 'mysql'
+        run: |
+          sudo systemctl start mysql.service
+          mysql -uroot -proot -e "CREATE DATABASE car_workshop_db CHARACTER SET utf8mb4"
+          mysql -uroot -proot car_workshop_db < database.sql
+          {
+            echo "DB_DRIVER=mysql"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_USER=root"
+            echo "DB_PASS=root"
+          } >> "$GITHUB_ENV"
+
+      # Several workers, so the concurrency test really runs requests in parallel.
+      - name: Start PHP server
+        run: |
+          PHP_CLI_SERVER_WORKERS=8 php -S 127.0.0.1:8000 > server.log 2>&1 &
+          sleep 2
+          curl -sf http://127.0.0.1:8000/index.php | grep -q "Book Senior Mechanic Online"
+          curl -sf http://127.0.0.1:8000/admin.php | grep -q "Client Appointments Management"
+
+      - name: API tests
+        run: php tests/api_test.php http://127.0.0.1:8000
+
+      # config.php quietly falls back to SQLite if MySQL is unreachable, so
+      # make sure the bookings actually landed in MySQL.
+      - name: Check the MySQL run used MySQL
+        if: matrix.db == 'mysql'
+        run: |
+          rows=$(mysql -uroot -proot -N -e "SELECT COUNT(*) FROM car_workshop_db.appointments")
+          echo "appointments in MySQL: $rows"
+          test "$rows" -gt 0
+          test ! -f workshop.sqlite
+
+      - name: Server log
+        if: always()
+        run: cat server.log
