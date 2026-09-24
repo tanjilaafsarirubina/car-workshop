@@ -1,12 +1,32 @@
 <?php
-define('DB_DRIVER', 'mysql');
-define('DB_HOST', 'sql208.infinityfree.com');
-define('DB_PORT', '3306');
-define('DB_NAME', 'if0_42459246_car_workshop_db');
-define('DB_USER', 'if0_42459246');
-define('DB_PASS', '[REDACTED]');
+// Database settings come from config.local.php (git-ignored, copy
+// config.local.example.php) or from environment variables. With neither,
+// the app runs on a local SQLite file, so `php -S` works out of the box.
+if (is_file(__DIR__ . '/config.local.php')) {
+    require __DIR__ . '/config.local.php';
+}
 
-define('SQLITE_FILE', __DIR__ . '/workshop.sqlite');
+function defineSetting($name, $default) {
+    if (defined($name)) {
+        return;
+    }
+    $value = getenv($name);
+    define($name, ($value === false || $value === '') ? $default : $value);
+}
+
+defineSetting('DB_DRIVER', 'sqlite');
+defineSetting('DB_HOST', 'localhost');
+defineSetting('DB_PORT', '3306');
+defineSetting('DB_NAME', 'car_workshop_db');
+defineSetting('DB_USER', 'root');
+defineSetting('DB_PASS', '');
+
+defineSetting('SQLITE_FILE', __DIR__ . '/workshop.sqlite');
+
+// "Today" decides which dates can be booked, so it has to be the workshop's
+// today, not the server's.
+defineSetting('APP_TIMEZONE', 'Asia/Dhaka');
+date_default_timezone_set(APP_TIMEZONE);
 
 function getDBConnection() {
     static $pdo = null;

@@ -1,0 +1,13 @@
+# Real database credentials (see config.local.example.php)
+config.local.php
+
+# Local SQLite database, created on first request
+*.sqlite
+*.sqlite-journal
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
