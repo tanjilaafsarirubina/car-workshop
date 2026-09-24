@@ -136,9 +136,8 @@ This is a course project, not production software:
   `cancelled` yet.
 - The admin panel's mechanic filter and the "5 Senior Mechanics" counter are
   hard-coded rather than read from the database.
-- The original deployment on InfinityFree free hosting
-  (`car-workshop.great-site.net`) has been suspended by the host, so there is
-  no live demo at the moment.
+- There is no live demo. The original deployment on InfinityFree free hosting
+  has been taken down; the screenshots above show the current version.
 
 ## Changes since the graded submission
 
